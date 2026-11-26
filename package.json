@@ -1,0 +1,13 @@
+{
+  "name": "hometv-web-controller",
+  "version": "1.0.0",
+  "description": "LAN web remote for Samsung Tizen TV (UN58MU6070)",
+  "type": "commonjs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "ws": "^8.23.0"
+  }
+}

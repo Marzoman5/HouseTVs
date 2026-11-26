@@ -1,0 +1,10 @@
+{
+  "tvIp": "REPLACE_WITH_TV_IP",
+  "tvMac": "REPLACE_WITH_TV_MAC",
+  "tvPort": 8002,
+  "serverPort": 3000,
+  "clientName": "HouseTVs Web Controller",
+  "broadcastIp": "255.255.255.255",
+  "upnpPort": 9197,
+  "renderControlUrl": "/upnp/control/RenderingControl1"
+}
