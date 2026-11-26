@@ -371,8 +371,8 @@ function startAlexa() {
     { slot: 5, name: 'TV Tunes',    type: 'momentary', on: launch('3201606009684') }, // Spotify
     { slot: 6, name: 'TV Mute', type: 'switch', on: () => upnp.setMute(1), off: () => upnp.setMute(0),
       state: async () => ((await upnp.getMute()).mute === '1' ? 1 : 0) },
-    { slot: 7, name: 'TV Louder',   type: 'momentary', on: () => volBump(3) },
-    { slot: 8, name: 'TV Quieter',  type: 'momentary', on: () => volBump(-3) },
+    { slot: 7, name: 'TV Louder',  serial: 'HTV2007', type: 'momentary', on: () => volBump(3) },
+    { slot: 8, name: 'TV Quieter', serial: 'HTV2008', type: 'momentary', on: () => volBump(-3) },
     { slot: 9, name: 'Movie Night', type: 'momentary', on: async () => { await launchApp('11101200001'); await upnp.setVolume(18); } },
     { slot: 10, name: 'Bedtime',    type: 'momentary', on: async () => { await upnp.setMute(1); enqueueKey('KEY_POWER'); } },
   ];

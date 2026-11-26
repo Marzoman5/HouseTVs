@@ -84,7 +84,8 @@ function startAlexaBridge({ hostIp, firstPort = 4000, devices }) {
   devices.forEach((dev, i) => {
     const slot = dev.slot != null ? dev.slot : i; // stable identity, independent of list order
     dev.port = firstPort + slot;
-    dev.serial = 'HTV' + String(1000 + slot);
+    // dev.serial override forces Alexa to treat it as a NEW device (after a delete).
+    dev.serial = dev.serial || ('HTV' + String(1000 + slot));
     dev.reported = 0;
 
     http.createServer(async (req, res) => {
