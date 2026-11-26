@@ -71,6 +71,24 @@
   </section>
 
   <section>
+    <div class="lbl">Apps</div>
+    <div class="grid g3" id="apps">
+      <button class="sm" onclick="app('11101200001')">Netflix</button>
+      <button class="sm" onclick="app('111299001912')">YouTube</button>
+      <button class="sm" onclick="app('3201601007625')">Hulu</button>
+      <button class="sm" onclick="app('3201901017640')">Disney+</button>
+      <button class="sm" onclick="app('3201512006785')">Prime Video</button>
+      <button class="sm" onclick="app('3202301029760')">HBO Max</button>
+      <button class="sm" onclick="app('3202006020991')">Peacock</button>
+      <button class="sm" onclick="app('3201710014981')">Paramount+</button>
+      <button class="sm" onclick="app('3202106024097')">Apple TV</button>
+      <button class="sm" onclick="app('3201606009684')">Spotify</button>
+      <button class="sm" onclick="app('3201504001965')">Tubi</button>
+      <button class="sm" onclick="app('3201708014618')">ESPN</button>
+    </div>
+  </section>
+
+  <section>
     <div class="lbl">Navigate</div>
     <div class="dpad">
       <button class="up" onclick="k('KEY_UP')">▲</button>
@@ -168,6 +186,7 @@ async function pollVol(){
     const mb=$('muteBtn'); if(mb) mb.textContent = v.mute ? '🔈 Unmute' : '🔇 Mute';
   }catch(e){}
 }
+async function app(id){ if(navigator.vibrate)navigator.vibrate(8); const r=await api('/api/app/launch',{appId:id}); if(!r.ok) flash(r.error||'launch failed'); }
 async function pair(){ const r=await api('/api/pair'); flash(r.message||'pairing…'); }
 async function powerOn(){ const r=await api('/api/power-on'); flash(r.message||''); }
 async function sendText(){

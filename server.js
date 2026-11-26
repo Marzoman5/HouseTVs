@@ -158,6 +158,19 @@ function sendText(text) {
   try { State.ws.send(payload); return true; } catch { return false; }
 }
 
+// ---- App launch (Samsung REST v2) ------------------------------------------
+function launchApp(appId) {
+  return new Promise((resolve) => {
+    const req = http.request(
+      { host: CONFIG.tvIp, port: 8001, path: `/api/v2/applications/${appId}`, method: 'POST', timeout: 8000 },
+      (res) => { let d = ''; res.on('data', (c) => (d += c)); res.on('end', () => resolve({ ok: res.statusCode === 200, status: res.statusCode, body: d })); }
+    );
+    req.on('error', (e) => resolve({ ok: false, error: e.message }));
+    req.on('timeout', () => { req.destroy(); resolve({ ok: false, error: 'timeout' }); });
+    req.end();
+  });
+}
+
 // ---- Wake-on-LAN -----------------------------------------------------------
 function wakeOnLan() {
   return new Promise((resolve) => {
@@ -279,6 +292,14 @@ const server = http.createServer(async (req, res) => {
     const next = cur.mute === '1' ? 0 : 1;
     const r = await upnp.setMute(next);
     return send(res, 200, { ok: !r.err && !r.fault, mute: next === 1, fault: r.fault || null, err: r.err || null });
+  }
+
+  if (req.method === 'POST' && p === '/api/app/launch') {
+    const body = await readBody(req);
+    const appId = String(body.appId || '').trim();
+    if (!/^[A-Za-z0-9._]{3,40}$/.test(appId)) return send(res, 400, { ok: false, error: 'bad appId' });
+    const r = await launchApp(appId);
+    return send(res, r.ok ? 200 : 502, r);
   }
 
   if (req.method === 'POST' && p === '/api/text') {
