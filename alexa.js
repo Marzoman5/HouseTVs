@@ -36,11 +36,12 @@ function lanIpForSubnet(tvIp) {
 }
 
 function setupXml(dev) {
+  const deviceType = dev.type === 'dimmer' ? 'urn:Belkin:device:dimmer:1' : 'urn:Belkin:device:controllee:1';
   return `<?xml version="1.0"?>
 <root xmlns="urn:schemas-upnp-org:device-1-0">
   <specVersion><major>1</major><minor>0</minor></specVersion>
   <device>
-    <deviceType>urn:Belkin:device:controllee:1</deviceType>
+    <deviceType>${deviceType}</deviceType>
     <friendlyName>${dev.name}</friendlyName>
     <manufacturer>Belkin International Inc.</manufacturer>
     <modelName>Emulated Socket</modelName>
@@ -70,19 +71,20 @@ const EVENT_XML = `<?xml version="1.0"?>
 <serviceStateTable><stateVariable sendEvents="yes"><name>BinaryState</name><dataType>Boolean</dataType>
 <defaultValue>0</defaultValue></stateVariable></serviceStateTable></scpd>`;
 
-function soapState(n) {
+function soapResp(action, fields) {
+  const inner = Object.entries(fields).map(([k, v]) => `<${k}>${v}</${k}>`).join('');
   return `<?xml version="1.0" encoding="utf-8"?>` +
     `<s:Envelope xmlns:s="http://schemas.xmlsoap.org/soap/envelope/" s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/">` +
-    `<s:Body><u:GetBinaryStateResponse xmlns:u="urn:Belkin:service:basicevent:1">` +
-    `<BinaryState>${n}</BinaryState></u:GetBinaryStateResponse></s:Body></s:Envelope>`;
+    `<s:Body><u:${action}Response xmlns:u="urn:Belkin:service:basicevent:1">${inner}</u:${action}Response></s:Body></s:Envelope>`;
 }
 
 function startAlexaBridge({ hostIp, firstPort = 4000, devices }) {
   const nls = crypto.randomUUID ? crypto.randomUUID() : crypto.randomBytes(16).toString('hex');
 
   devices.forEach((dev, i) => {
-    dev.port = firstPort + i;
-    dev.serial = 'HTV' + String(1000 + i);
+    const slot = dev.slot != null ? dev.slot : i; // stable identity, independent of list order
+    dev.port = firstPort + slot;
+    dev.serial = 'HTV' + String(1000 + slot);
     dev.reported = 0;
 
     http.createServer(async (req, res) => {
@@ -103,20 +105,30 @@ function startAlexaBridge({ hostIp, firstPort = 4000, devices }) {
         let body = '';
         req.on('data', (c) => { body += c; if (body.length > 1e5) req.destroy(); });
         req.on('end', async () => {
+          const action = (req.headers['soapaction'] || '').replace(/["']/g, '');
+          if (dev.type === 'dimmer') console.log(`[alexa][dimmer] ${dev.name} action=${action} body=${body.replace(/\s+/g, ' ').trim()}`);
           try {
-            if (/SetBinaryState/i.test(body)) {
+            if (/SetBinaryState/i.test(body) || /SetBinaryState/i.test(action)) {
               const on = /<BinaryState>\s*1/i.test(body);
+              const bm = body.match(/<brightness>\s*(\d+)/i);
               dev.reported = on ? 1 : 0;
-              try { if (on && dev.on) await dev.on(); else if (!on && dev.off) await dev.off(); } catch (e) { console.log('[alexa]', dev.name, 'action error', e.message); }
+              try {
+                if (dev.type === 'dimmer' && bm && dev.onBrightness) { await dev.onBrightness(Number(bm[1])); dev.reported = 1; }
+                else if (on && dev.on) await dev.on();
+                else if (!on && dev.off) await dev.off();
+              } catch (e) { console.log('[alexa]', dev.name, 'action error', e.message); }
               if (dev.type === 'momentary') dev.reported = 0;
               res.writeHead(200, { 'Content-Type': 'text/xml', 'Connection': 'close' });
-              return res.end(soapState(dev.reported));
+              return res.end(soapResp('SetBinaryState', { BinaryState: dev.reported }));
             }
-            if (/GetBinaryState/i.test(body)) {
-              let s = dev.reported;
-              if (dev.type !== 'momentary' && dev.state) { try { s = await dev.state(); } catch {} }
+            if (/GetBinaryState/i.test(body) || /GetBinaryState/i.test(action)) {
+              let s = dev.reported, bri = null;
+              if (dev.type === 'dimmer' && dev.level) { try { bri = await dev.level(); s = bri > 0 ? 1 : 0; } catch {} }
+              else if (dev.type !== 'momentary' && dev.state) { try { s = await dev.state(); } catch {} }
+              const fields = { BinaryState: s };
+              if (bri != null) fields.brightness = bri;
               res.writeHead(200, { 'Content-Type': 'text/xml', 'Connection': 'close' });
-              return res.end(soapState(s));
+              return res.end(soapResp('GetBinaryState', fields));
             }
           } catch {}
           res.writeHead(200, { 'Connection': 'close' }); res.end();

@@ -338,20 +338,22 @@ function startAlexa() {
   const hostIp = lanIpForSubnet(CONFIG.tvIp);
   const launch = (appId) => () => launchApp(appId);
   // Names avoid Alexa's reserved words (Netflix/Hulu/"volume up" are built-ins).
+  // 'slot' = stable port/identity. Never reuse or renumber a slot once devices
+  // are discovered; only append new slots. (Reshuffling breaks Alexa's cache.)
   const devices = [
-    { name: 'Main TV', type: 'switch', on: () => wakeOnLan(), off: () => enqueueKey('KEY_POWER'),
+    { slot: 0, name: 'Main TV', type: 'switch', on: () => wakeOnLan(), off: () => enqueueKey('KEY_POWER'),
       state: async () => (State.connected ? 1 : 0) },
-    { name: 'TV Flix',     type: 'momentary', on: launch('11101200001') },   // Netflix
-    { name: 'TV Tube',     type: 'momentary', on: launch('111299001912') },  // YouTube
-    { name: 'TV Hulu Show',type: 'momentary', on: launch('3201601007625') }, // Hulu
-    { name: 'TV Disney',   type: 'momentary', on: launch('3201901017640') },
-    { name: 'TV Tunes',    type: 'momentary', on: launch('3201606009684') }, // Spotify
-    { name: 'TV Mute', type: 'switch', on: () => upnp.setMute(1), off: () => upnp.setMute(0),
+    { slot: 1, name: 'TV Flix',     type: 'momentary', on: launch('11101200001') },   // Netflix
+    { slot: 2, name: 'TV Tube',     type: 'momentary', on: launch('111299001912') },  // YouTube
+    { slot: 3, name: 'TV Hulu Show',type: 'momentary', on: launch('3201601007625') }, // Hulu
+    { slot: 4, name: 'TV Disney',   type: 'momentary', on: launch('3201901017640') },
+    { slot: 5, name: 'TV Tunes',    type: 'momentary', on: launch('3201606009684') }, // Spotify
+    { slot: 6, name: 'TV Mute', type: 'switch', on: () => upnp.setMute(1), off: () => upnp.setMute(0),
       state: async () => ((await upnp.getMute()).mute === '1' ? 1 : 0) },
-    { name: 'TV Louder',   type: 'momentary', on: () => volBump(3) },
-    { name: 'TV Quieter',  type: 'momentary', on: () => volBump(-3) },
-    { name: 'Movie Night', type: 'momentary', on: async () => { await launchApp('11101200001'); await upnp.setVolume(18); } },
-    { name: 'Bedtime',     type: 'momentary', on: async () => { await upnp.setMute(1); enqueueKey('KEY_POWER'); } },
+    { slot: 7, name: 'TV Louder',   type: 'momentary', on: () => volBump(3) },
+    { slot: 8, name: 'TV Quieter',  type: 'momentary', on: () => volBump(-3) },
+    { slot: 9, name: 'Movie Night', type: 'momentary', on: async () => { await launchApp('11101200001'); await upnp.setVolume(18); } },
+    { slot: 10, name: 'Bedtime',    type: 'momentary', on: async () => { await upnp.setMute(1); enqueueKey('KEY_POWER'); } },
   ];
   startAlexaBridge({ hostIp, firstPort: CONFIG.alexaFirstPort || 4000, devices });
   console.log(`Alexa bridge: ${devices.length} devices advertised as ${hostIp}. Say "Alexa, discover devices".`);
