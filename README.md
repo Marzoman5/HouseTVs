@@ -63,6 +63,27 @@ node server.js
 - `POST /api/text` `{ "text": "..." }` — type into a TV field
 - `POST /api/power-on` — Wake-on-LAN
 
+## Alexa voice control (local, no cloud)
+
+The server emulates **Belkin WeMo** devices on the LAN, so any Echo discovers them
+natively — no skill, no account linking, no cloud. Enabled by default
+(`alexaEnabled` in config). After the server is running, say **"Alexa, discover
+devices"**. You get:
+
+| Say | Does |
+|-----|------|
+| "Alexa, turn on **Television**" / off | Wake-on-LAN / power off |
+| "Alexa, turn on **Netflix**" (Hulu, YouTube, Disney Plus, Spotify) | launch that app |
+| "Alexa, turn on **Mute**" / off | mute / unmute |
+| "Alexa, turn on **Volume Up**" / **Volume Down** | step volume ±3 |
+| "Alexa, turn on **Movie Night**" | open Netflix + set volume |
+| "Alexa, turn on **Good Night**" | mute + power off |
+
+Requires inbound **UDP 1900** (SSDP) and **TCP 4000-4015** (device endpoints) on the
+LAN — `setup.ps1` adds these. Edit the device list in `server.js` (`startAlexa`).
+Limitation: WeMo devices only speak on/off, so arbitrary "play *title*" isn't possible
+via this bridge — use named scenes instead.
+
 ## Notes
 
 - `config.json` and `token.json` are gitignored (they hold your LAN/TV specifics).

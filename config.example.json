@@ -6,5 +6,7 @@
   "clientName": "HouseTVs Web Controller",
   "broadcastIp": "255.255.255.255",
   "upnpPort": 9197,
-  "renderControlUrl": "/upnp/control/RenderingControl1"
+  "renderControlUrl": "/upnp/control/RenderingControl1",
+  "alexaEnabled": true,
+  "alexaFirstPort": 4000
 }

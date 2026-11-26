@@ -62,6 +62,17 @@ if (-not (Get-NetFirewallRule -DisplayName $ruleName -ErrorAction SilentlyContin
   Write-Host "Firewall rule already present."
 }
 
+# 4b) Alexa (WeMo emulation) needs SSDP (UDP 1900) + device ports (TCP 4000-4015)
+if (-not (Get-NetFirewallRule -DisplayName 'HouseTVs Alexa SSDP' -ErrorAction SilentlyContinue)) {
+  New-NetFirewallRule -DisplayName 'HouseTVs Alexa SSDP' -Direction Inbound -Action Allow `
+    -Protocol UDP -LocalPort 1900 -Profile Any -RemoteAddress LocalSubnet | Out-Null
+  New-NetFirewallRule -DisplayName 'HouseTVs Alexa Devices' -Direction Inbound -Action Allow `
+    -Protocol TCP -LocalPort 4000-4015 -Profile Any -RemoteAddress LocalSubnet | Out-Null
+  Write-Host "Alexa firewall rules added (UDP 1900, TCP 4000-4015)."
+} else {
+  Write-Host "Alexa firewall rules already present."
+}
+
 # 5) Auto-start at boot via Scheduled Task (always-on house server)
 if (-not $NoAutoStart) {
   $taskName = 'HouseTVs'
