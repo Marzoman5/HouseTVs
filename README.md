@@ -7,9 +7,10 @@ Wi-Fi control the TV from a phone browser — no app, no Samsung account, no IR 
 ## Why it exists
 
 - The physical/IR remote was missing.
-- The TV's **remote-key path is intermittently flaky** (volume sometimes won't change,
-  mute won't unmute). HouseTVs sends volume & mute over the TV's **UPnP RenderingControl**
-  service instead, which is reliable. Navigation/media/power use the Samsung WebSocket API.
+- The remote-key path showed **intermittent volume/mute problems** (volume sometimes
+  wouldn't change, mute wouldn't unmute). HouseTVs sends volume & mute over the TV's
+  **UPnP RenderingControl** service instead, which tested reliably in every trial.
+  Navigation, media, power and text use the Samsung WebSocket API.
 
 ## What you get
 

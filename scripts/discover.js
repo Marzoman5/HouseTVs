@@ -41,18 +41,35 @@ function ssdpSearch(ms = 3000) {
   });
 }
 
-function broadcastForHost() {
-  for (const [, addrs] of Object.entries(os.networkInterfaces())) {
+// Skip virtual adapters (VMware/VirtualBox/Hyper-V/etc.) so WoL leaves the real LAN NIC.
+const VIRTUAL_RE = /vmware|virtualbox|vethernet|hyper-v|loopback|bluetooth|vmnet|docker|wsl/i;
+
+function realIPv4Interfaces() {
+  const out = [];
+  for (const [name, addrs] of Object.entries(os.networkInterfaces())) {
+    if (VIRTUAL_RE.test(name)) continue;
     for (const a of addrs) {
-      if (a.family === 'IPv4' && !a.internal && a.address.startsWith('192.168.')) {
-        const ip = a.address.split('.').map(Number);
-        const mask = a.netmask.split('.').map(Number);
-        const bc = ip.map((o, i) => (o & mask[i]) | (~mask[i] & 255));
-        return bc.join('.');
-      }
+      if (a.family === 'IPv4' && !a.internal) out.push({ name, address: a.address, netmask: a.netmask });
     }
   }
-  return '255.255.255.255';
+  return out;
+}
+
+function bcast(ip, mask) {
+  const i = ip.split('.').map(Number), m = mask.split('.').map(Number);
+  return i.map((o, k) => (o & m[k]) | (~m[k] & 255)).join('.');
+}
+function sameSubnet(a, b, mask) {
+  const A = a.split('.').map(Number), B = b.split('.').map(Number), M = mask.split('.').map(Number);
+  return A.every((o, k) => (o & M[k]) === (B[k] & M[k]));
+}
+
+// Broadcast for Wake-on-LAN, chosen on the interface that shares the TV's subnet.
+function broadcastForTV(tvIp) {
+  const ifaces = realIPv4Interfaces();
+  const match = tvIp && ifaces.find((f) => sameSubnet(f.address, tvIp, f.netmask));
+  const chosen = match || ifaces[0];
+  return chosen ? bcast(chosen.address, chosen.netmask) : '255.255.255.255';
 }
 
 async function confirmTV(ip) {
@@ -76,9 +93,9 @@ async function confirmTV(ip) {
   }
   // Fallback: nothing via SSDP, try a light sweep of the local /24.
   if (tvs.length === 0) {
-    const bc = broadcastForHost();
-    if (bc !== '255.255.255.255') {
-      const prefix = bc.split('.').slice(0, 3).join('.');
+    const ifc = realIPv4Interfaces()[0];
+    if (ifc) {
+      const prefix = ifc.address.split('.').slice(0, 3).join('.');
       process.stdout.write(`No SSDP hits; sweeping ${prefix}.0/24 on :8001…\n`);
       const checks = [];
       for (let i = 1; i < 255; i++) checks.push(confirmTV(`${prefix}.${i}`));
@@ -105,7 +122,7 @@ async function confirmTV(ip) {
     tvPort: base.tvPort || 8002,
     serverPort: base.serverPort || 3000,
     clientName: base.clientName || 'HouseTVs Web Controller',
-    broadcastIp: broadcastForHost(),
+    broadcastIp: broadcastForTV(tv.ip),
     upnpPort: base.upnpPort || 9197,
     renderControlUrl: base.renderControlUrl || '/upnp/control/RenderingControl1',
   };
