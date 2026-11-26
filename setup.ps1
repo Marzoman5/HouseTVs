@@ -72,6 +72,12 @@ if (-not (Get-NetFirewallRule -DisplayName 'HouseTVs Alexa SSDP' -ErrorAction Si
 } else {
   Write-Host "Alexa firewall rules already present."
 }
+# Hue emulation (for "set TV volume to N") needs TCP 80
+if (-not (Get-NetFirewallRule -DisplayName 'HouseTVs Hue' -ErrorAction SilentlyContinue)) {
+  New-NetFirewallRule -DisplayName 'HouseTVs Hue' -Direction Inbound -Action Allow `
+    -Protocol TCP -LocalPort 80 -Profile Any -RemoteAddress LocalSubnet | Out-Null
+  Write-Host "Hue firewall rule added (TCP 80)."
+}
 
 # 5) Auto-start at boot via Scheduled Task (always-on house server)
 if (-not $NoAutoStart) {

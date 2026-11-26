@@ -77,7 +77,13 @@ devices"**. You get:
 | "Alexa, turn on **Mute**" / off | mute / unmute |
 | "Alexa, turn on **Volume Up**" / **Volume Down** | step volume ±3 |
 | "Alexa, turn on **Movie Night**" | open Netflix + set volume |
-| "Alexa, turn on **Good Night**" | mute + power off |
+| "Alexa, turn on **Bedtime**" | mute + power off |
+| "Alexa, **set TV Volume to 20**" | exact volume (via emulated Hue, port 80) |
+
+Device names avoid Alexa's reserved words (it hijacks "Netflix", "volume up", etc.).
+For exact-number volume the server also runs a tiny **emulated Hue bridge** (port 80)
+exposing one dimmable light, "TV Volume". Natural phrases are best made with **Alexa
+Routines** pointing at these devices.
 
 Requires inbound **UDP 1900** (SSDP) and **TCP 4000-4015** (device endpoints) on the
 LAN — `setup.ps1` adds these. Edit the device list in `server.js` (`startAlexa`).
