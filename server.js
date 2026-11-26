@@ -7,6 +7,7 @@ const dgram = require('dgram');
 const WebSocket = require('ws');
 const upnp = require('./upnp');
 const { startAlexaBridge, lanIpForSubnet } = require('./alexa');
+const { startHueBridge } = require('./hue');
 
 const CONFIG = JSON.parse(fs.readFileSync(path.join(__dirname, 'config.json'), 'utf8'));
 const TOKEN_FILE = path.join(__dirname, 'token.json');
@@ -325,7 +326,27 @@ server.listen(CONFIG.serverPort, '0.0.0.0', () => {
   else console.log('No token yet — open the page and press "Pair with TV".');
 
   if (CONFIG.alexaEnabled !== false) startAlexa();
+  if (CONFIG.hueEnabled !== false) startHue();
 });
+
+// ---- Hue bridge (reliable "set TV volume to N") ----------------------------
+function startHue() {
+  const hostIp = lanIpForSubnet(CONFIG.tvIp);
+  startHueBridge({
+    hostIp,
+    light: {
+      name: 'TV Volume',
+      setOn: async (on) => { await upnp.setMute(on ? 0 : 1); },
+      setBrightnessPct: async (pct) => { await upnp.setMute(0); await upnp.setVolume(pct); },
+      getState: async () => {
+        const v = await upnp.getVolume();
+        const m = await upnp.getMute();
+        return { on: m.mute !== '1', pct: v.volume != null ? Number(v.volume) : 0 };
+      },
+    },
+  });
+  console.log(`Hue bridge: "TV Volume" dimmable light advertised as ${hostIp}:80.`);
+}
 
 // ---- Alexa (WeMo emulation) ------------------------------------------------
 async function volBump(delta) {

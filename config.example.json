@@ -8,5 +8,6 @@
   "upnpPort": 9197,
   "renderControlUrl": "/upnp/control/RenderingControl1",
   "alexaEnabled": true,
-  "alexaFirstPort": 4000
+  "alexaFirstPort": 4000,
+  "hueEnabled": true
 }
